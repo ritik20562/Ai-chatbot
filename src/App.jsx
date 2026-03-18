@@ -1,9 +1,5 @@
-import React from 'react'
+import Chat from "./pages/Chat";
 
-const App = () => {
-  return (
-    <div>App</div>
-  )
+export default function App() {
+  return <Chat />;
 }
-
-export default App
