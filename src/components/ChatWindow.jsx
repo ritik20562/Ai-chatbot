@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
+import ReactMarkdown from "react-markdown";
 
 export default function ChatWindow({ chat, chats, setChats }) {
   const messagesEndRef = useRef(null);
@@ -133,7 +134,7 @@ useEffect(() => {
                   key={index}
                   className={`message-row ${msg.role === "user" ? "user-row" : "assistant-row"}`}
                 >
-                  <div className={`message ${msg.role}`}>{msg.content}</div>
+                  <div className={`message ${msg.role}`}><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                 </div>
               ))}
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { askAI } from "../services/openrouter";
 
 export default function ChatInput({ chat, chats, setChats }) {
 
@@ -11,32 +12,52 @@ export default function ChatInput({ chat, chats, setChats }) {
   }, []);
 
   // SEND MESSAGE
-  const sendMessage = () => {
+  const sendMessage = async () => {
 
-    if (!input.trim() || !chat) return;
+    if (!input.trim()) return;
 
-    const updatedChats = chats.map((c) => {
+    const userMessage = input;
+    setInput("");
 
+    // Add user message first (fast UI)
+    let updatedChats = chats.map((c) => {
       if (c.id === chat.id) {
-
-        const newMessages = [
-          ...c.messages,
-          { role: "user", content: input },
-         { role: "assistant", content: "", typing: true }
-        ];
-
         return {
           ...c,
-          title: c.messages.length === 0 ? input : c.title,
-          messages: newMessages
+          messages: [
+            ...c.messages,
+            { role: "user", content: userMessage },
+            { role: "assistant", content: "Typing..." }
+          ]
         };
       }
-
       return c;
     });
 
     setChats(updatedChats);
-    setInput("");
+
+    try {
+      // Get AI response
+      const aiReply = await askAI(userMessage);
+
+      // Replace "Typing..." with real response
+      updatedChats = updatedChats.map((c) => {
+        if (c.id === chat.id) {
+          const msgs = [...c.messages];
+          msgs[msgs.length - 1] = {
+            role: "assistant",
+            content: aiReply
+          };
+          return { ...c, messages: msgs };
+        }
+        return c;
+      });
+
+      setChats(updatedChats);
+
+    } catch (error) {
+      console.error(error);
+    }
 
     // keep focus after send
     inputRef.current?.focus();
