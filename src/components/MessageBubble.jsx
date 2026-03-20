@@ -1,51 +1,58 @@
-import { FiCopy, FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+import { FiCopy, FiCheck, FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 export default function MessageBubble({ message }) {
 
-const isUser = message.role === "user";
+  const isUser = message.role === "user";
+  const [copied, setCopied] = useState(false);
 
-const copyMessage = () => {
-  navigator.clipboard.writeText(message.content);
-};
+  const copyText = () => {
+    navigator.clipboard.writeText(message.content);
+    setCopied(true);
 
-return (
+    setTimeout(() => {
+      setCopied(false);
+    }, 1500);
+  };
 
-<div className={`message-row ${isUser ? "user-row" : "assistant-row"}`}>
+  return (
 
+    <div className={`message-row ${isUser ? "user-row" : "assistant-row"}`}>
 
-{/* Message */}
-<div className="message-content">
+      <div className="message-content">
 
-<div className={`message ${isUser ? "user" : "assistant"}`}>
-{message.content}
-</div>
+        {/* MESSAGE */}
+        <div className={`message ${isUser ? "user" : "assistant"}`}>
+          <ReactMarkdown>
+            {message.content}
+          </ReactMarkdown>
+        </div>
 
-{/* AI Actions */}
-{!isUser && (
+        {/* ACTIONS */}
+        {!isUser && (
 
-<div className="message-actions">
+          <div className="message-actions">
 
-  <button onClick={copyMessage}>
-    <FiCopy size={14}/>
-  </button>
+            <button onClick={copyText}>
+              {copied ? <FiCheck size={14}/> : <FiCopy size={14}/>}
+            </button>
 
+            <button>
+              <FiThumbsUp size={14}/>
+            </button>
 
-<button>
-<FiThumbsUp size={14}/>
-</button>
+            <button>
+              <FiThumbsDown size={14}/>
+            </button>
 
-<button>
-<FiThumbsDown size={14}/>
-</button>
+          </div>
 
-</div>
+        )}
 
-)}
+      </div>
 
-</div>
+    </div>
 
-</div>
-
-);
-
+  );
 }

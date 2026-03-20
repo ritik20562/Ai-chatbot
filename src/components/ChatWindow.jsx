@@ -1,63 +1,105 @@
 import { useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
-import ReactMarkdown from "react-markdown";
+import MessageBubble from "../components/MessageBubble";
 
 export default function ChatWindow({ chat, chats, setChats }) {
   const messagesEndRef = useRef(null);
 
   // AUTO SCROLL
- useEffect(() => {
-  messagesEndRef.current?.scrollIntoView({
-    behavior: "smooth",
-    block: "end"
-  });
-}, [chat?.messages]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [chat?.messages]);
 
-useEffect(() => {
+  useEffect(() => {
+    if (!chat || chat.messages.length === 0) return;
 
-  if (!chat || chat.messages.length === 0) return;
+    const lastMessage = chat.messages[chat.messages.length - 1];
 
-  const lastMessage = chat.messages[chat.messages.length - 1];
+    if (!lastMessage.typing) return;
 
-  if (!lastMessage.typing) return;
+    const text = "AI response coming soon...";
+    let i = 0;
 
-  const text = "AI response coming soon...";
-  let i = 0;
+    const interval = setInterval(() => {
+      i++;
 
-  const interval = setInterval(() => {
+      setChats((prevChats) =>
+        prevChats.map((c) => {
+          if (c.id !== chat.id) return c;
 
-    i++;
+          const updatedMessages = [...c.messages];
 
-    setChats(prevChats =>
-      prevChats.map(c => {
+          updatedMessages[updatedMessages.length - 1] = {
+            ...updatedMessages[updatedMessages.length - 1],
+            content: text.slice(0, i),
+            typing: i !== text.length,
+          };
 
-        if (c.id !== chat.id) return c;
+          return {
+            ...c,
+            messages: updatedMessages,
+          };
+        }),
+      );
 
-        const updatedMessages = [...c.messages];
+      if (i >= text.length) {
+        clearInterval(interval);
+      }
+    }, 40);
 
-        updatedMessages[updatedMessages.length - 1] = {
-          ...updatedMessages[updatedMessages.length - 1],
-          content: text.slice(0, i),
-          typing: i !== text.length
-        };
+    return () => clearInterval(interval);
+  }, [chat?.messages?.length]);
 
-        return {
-          ...c,
-          messages: updatedMessages
-        };
+  useEffect(() => {
+    const lastMessage = chat?.messages?.[chat.messages.length - 1];
 
-      })
-    );
+    if (!lastMessage || !lastMessage.typing) return;
 
-    if (i >= text.length) {
-      clearInterval(interval);
-    }
+    const fullText = "AI response coming soon..."; // will replace later with real API
+    let i = 0;
 
-  }, 40);
+    const interval = setInterval(() => {
+      i++;
 
-  return () => clearInterval(interval);
+      setChats((prevChats) =>
+        prevChats.map((c) => {
+          if (c.id !== chat.id) return c;
 
-}, [chat?.messages?.length]);
+          const msgs = [...c.messages];
+          msgs[msgs.length - 1] = {
+            ...msgs[msgs.length - 1],
+            content: fullText.slice(0, i),
+          };
+
+          return { ...c, messages: msgs };
+        }),
+      );
+
+      if (i >= fullText.length) {
+        clearInterval(interval);
+
+        // remove typing flag
+        setChats((prevChats) =>
+          prevChats.map((c) => {
+            if (c.id !== chat.id) return c;
+
+            const msgs = [...c.messages];
+            msgs[msgs.length - 1] = {
+              ...msgs[msgs.length - 1],
+              typing: false,
+            };
+
+            return { ...c, messages: msgs };
+          }),
+        );
+      }
+    }, 25);
+
+    return () => clearInterval(interval);
+  }, [chat?.messages]);
 
   // SUGGESTION FUNCTION
   const sendSuggestion = (text) => {
@@ -130,14 +172,8 @@ useEffect(() => {
           ) : (
             <>
               {chat.messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`message-row ${msg.role === "user" ? "user-row" : "assistant-row"}`}
-                >
-                  <div className={`message ${msg.role}`}><ReactMarkdown>{msg.content}</ReactMarkdown></div>
-                </div>
+                <MessageBubble key={index} message={msg} />
               ))}
-
               {/* SCROLL TARGET */}
               <div ref={messagesEndRef} />
             </>

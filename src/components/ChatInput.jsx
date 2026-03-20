@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { askAI } from "../services/openrouter";
 
 export default function ChatInput({ chat, chats, setChats }) {
-
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
 
@@ -13,7 +12,6 @@ export default function ChatInput({ chat, chats, setChats }) {
 
   // SEND MESSAGE
   const sendMessage = async () => {
-
     if (!input.trim()) return;
 
     const userMessage = input;
@@ -27,8 +25,8 @@ export default function ChatInput({ chat, chats, setChats }) {
           messages: [
             ...c.messages,
             { role: "user", content: userMessage },
-            { role: "assistant", content: "Typing..." }
-          ]
+            { role: "assistant", content: "", typing: true },
+          ],
         };
       }
       return c;
@@ -46,7 +44,7 @@ export default function ChatInput({ chat, chats, setChats }) {
           const msgs = [...c.messages];
           msgs[msgs.length - 1] = {
             role: "assistant",
-            content: aiReply
+            content: aiReply,
           };
           return { ...c, messages: msgs };
         }
@@ -54,7 +52,6 @@ export default function ChatInput({ chat, chats, setChats }) {
       });
 
       setChats(updatedChats);
-
     } catch (error) {
       console.error(error);
     }
@@ -73,7 +70,6 @@ export default function ChatInput({ chat, chats, setChats }) {
 
   return (
     <div className="input-area">
-
       <input
         ref={inputRef}
         type="text"
@@ -83,10 +79,7 @@ export default function ChatInput({ chat, chats, setChats }) {
         placeholder="Send a message..."
       />
 
-      <button onClick={sendMessage}>
-        ↑
-      </button>
-
+      <button onClick={sendMessage}>↑</button>
     </div>
   );
 }
