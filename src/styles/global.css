@@ -269,17 +269,7 @@ color:#666;
 color:#111;
 }
 
-.message pre {
-  background: #1e1e1e;
-  color: #fff;
-  padding: 12px;
-  border-radius: 8px;
-  overflow-x: auto;
-}
 
-.message code {
-  font-family: monospace;
-}
 
 
 /* INPUT AREA */

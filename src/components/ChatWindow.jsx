@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
 import ChatInput from "./ChatInput";
 import MessageBubble from "../components/MessageBubble";
+import { askAI } from "../services/openrouter";
 
 export default function ChatWindow({ chat, chats, setChats }) {
   const messagesEndRef = useRef(null);
 
-  // AUTO SCROLL
+  // ✅ AUTO SCROLL ONLY
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -13,117 +14,67 @@ export default function ChatWindow({ chat, chats, setChats }) {
     });
   }, [chat?.messages]);
 
-  useEffect(() => {
-    if (!chat || chat.messages.length === 0) return;
+  // ✅ FIXED SUGGESTION FUNCTION (with API + typing)
+  const sendSuggestion = async (text) => {
 
-    const lastMessage = chat.messages[chat.messages.length - 1];
+    if (!chat) return;
 
-    if (!lastMessage.typing) return;
-
-    const text = "AI response coming soon...";
-    let i = 0;
-
-    const interval = setInterval(() => {
-      i++;
-
-      setChats((prevChats) =>
-        prevChats.map((c) => {
-          if (c.id !== chat.id) return c;
-
-          const updatedMessages = [...c.messages];
-
-          updatedMessages[updatedMessages.length - 1] = {
-            ...updatedMessages[updatedMessages.length - 1],
-            content: text.slice(0, i),
-            typing: i !== text.length,
-          };
-
-          return {
-            ...c,
-            messages: updatedMessages,
-          };
-        }),
-      );
-
-      if (i >= text.length) {
-        clearInterval(interval);
-      }
-    }, 40);
-
-    return () => clearInterval(interval);
-  }, [chat?.messages?.length]);
-
-  useEffect(() => {
-    const lastMessage = chat?.messages?.[chat.messages.length - 1];
-
-    if (!lastMessage || !lastMessage.typing) return;
-
-    const fullText = "AI response coming soon..."; // will replace later with real API
-    let i = 0;
-
-    const interval = setInterval(() => {
-      i++;
-
-      setChats((prevChats) =>
-        prevChats.map((c) => {
-          if (c.id !== chat.id) return c;
-
-          const msgs = [...c.messages];
-          msgs[msgs.length - 1] = {
-            ...msgs[msgs.length - 1],
-            content: fullText.slice(0, i),
-          };
-
-          return { ...c, messages: msgs };
-        }),
-      );
-
-      if (i >= fullText.length) {
-        clearInterval(interval);
-
-        // remove typing flag
-        setChats((prevChats) =>
-          prevChats.map((c) => {
-            if (c.id !== chat.id) return c;
-
-            const msgs = [...c.messages];
-            msgs[msgs.length - 1] = {
-              ...msgs[msgs.length - 1],
-              typing: false,
-            };
-
-            return { ...c, messages: msgs };
-          }),
-        );
-      }
-    }, 25);
-
-    return () => clearInterval(interval);
-  }, [chat?.messages]);
-
-  // SUGGESTION FUNCTION
-  const sendSuggestion = (text) => {
-    const updatedChats = chats.map((c) => {
+    // STEP 1: add user + empty AI message
+    let updatedChats = chats.map((c) => {
       if (c.id === chat.id) {
         return {
           ...c,
           messages: [
             ...c.messages,
             { role: "user", content: text },
-            { role: "assistant", content: "AI response coming soon..." },
+            { role: "assistant", content: "", typing: true }
           ],
         };
       }
-
       return c;
     });
 
     setChats(updatedChats);
+
+    // STEP 2: call API
+    const fullResponse = await askAI(text);
+
+    // STEP 3: typing animation
+    let i = 0;
+
+    const interval = setInterval(() => {
+
+      i++;
+
+      updatedChats = updatedChats.map((c) => {
+
+        if (c.id !== chat.id) return c;
+
+        const msgs = [...c.messages];
+
+        msgs[msgs.length - 1] = {
+          ...msgs[msgs.length - 1],
+          content: fullResponse.slice(0, i),
+          typing: i !== fullResponse.length
+        };
+
+        return { ...c, messages: msgs };
+
+      });
+
+      setChats(updatedChats);
+
+      if (i >= fullResponse.length) {
+        clearInterval(interval);
+      }
+
+    }, 15);
   };
 
   return (
     <div className="chat-container">
       <div className="chat-inner">
+
         {/* MESSAGES */}
         <div className="messages">
           {chat?.messages?.length === 0 ? (
@@ -132,41 +83,31 @@ export default function ChatWindow({ chat, chats, setChats }) {
               <p>How can I help you today?</p>
 
               <div className="suggestions">
-                <button
-                  onClick={() =>
-                    sendSuggestion("What are the advantages of using Next.js?")
-                  }
-                >
+
+                <button onClick={() =>
+                  sendSuggestion("What are the advantages of using Next.js?")
+                }>
                   What are the advantages of using Next.js?
                 </button>
 
-                <button
-                  onClick={() =>
-                    sendSuggestion(
-                      "Write code to demonstrate Dijkstra's algorithm",
-                    )
-                  }
-                >
+                <button onClick={() =>
+                  sendSuggestion("Write code to demonstrate Dijkstra's algorithm")
+                }>
                   Write code to demonstrate Dijkstra's algorithm
                 </button>
 
-                <button
-                  onClick={() =>
-                    sendSuggestion(
-                      "Help me write an essay about Silicon Valley",
-                    )
-                  }
-                >
+                <button onClick={() =>
+                  sendSuggestion("Help me write an essay about Silicon Valley")
+                }>
                   Help me write an essay about Silicon Valley
                 </button>
 
-                <button
-                  onClick={() =>
-                    sendSuggestion("What is the weather in San Francisco?")
-                  }
-                >
+                <button onClick={() =>
+                  sendSuggestion("What is the weather in San Francisco?")
+                }>
                   What is the weather in San Francisco?
                 </button>
+
               </div>
             </div>
           ) : (
@@ -174,7 +115,7 @@ export default function ChatWindow({ chat, chats, setChats }) {
               {chat.messages.map((msg, index) => (
                 <MessageBubble key={index} message={msg} />
               ))}
-              {/* SCROLL TARGET */}
+
               <div ref={messagesEndRef} />
             </>
           )}
@@ -184,6 +125,7 @@ export default function ChatWindow({ chat, chats, setChats }) {
         <div className="chat-input-wrapper">
           <ChatInput chat={chat} chats={chats} setChats={setChats} />
         </div>
+
       </div>
     </div>
   );
