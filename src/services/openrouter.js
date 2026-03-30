@@ -1,4 +1,5 @@
-const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const API_KEY = VITE_OPENROUTER_API_KEY=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
+gfcfghfgdgdgdhgddhdghd;
 
 export async function askAI(prompt) {
   try {
